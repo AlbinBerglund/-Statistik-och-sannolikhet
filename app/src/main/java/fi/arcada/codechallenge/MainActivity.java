@@ -1,58 +1,78 @@
 package fi.arcada.codechallenge;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
+import android.widget.EditText;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import java.util.ArrayList; // import the ArrayList class
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView helloTextView;
-    private ArrayList<Double> doubles_list =  new ArrayList<>();
+    //Vi vill ha vår datamodel och en RecyclerView adapter
+    private List<DataModel> dataList = new ArrayList<>();
+    private MyAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        helloTextView = findViewById(R.id.hello);
 
-        doubles_list.add(3.2);
-        doubles_list.add(1.2);
-        doubles_list.add(3.6);
-        doubles_list.add(32.1);
-        doubles_list.add(23.5);
+        // Hitta våra saker!
+        EditText inputField1 = findViewById(R.id.inputField1);
+        EditText inputField2 = findViewById(R.id.inputField2);
+        Button addButton = findViewById(R.id.addButton);
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
 
-        calculate();
 
-    }
-    public void calculate() {
-        Button button = findViewById(R.id.button_id);
-        button.setOnClickListener(new View.OnClickListener() {
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new MyAdapter(dataList);
+        recyclerView.setAdapter(adapter);
+
+        // Vi trycker på knappen!
+        addButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                Statistics stats = new Statistics();
-                double mean = stats.calcMean(doubles_list);
-                helloTextView.setText("Mean: " + mean);
+            public void onClick(View v) {
+                String value1 = inputField1.getText().toString();
+                String value2 = inputField2.getText().toString();
+                // Error handlers!
+                if (!value1.isEmpty() && !value2.isEmpty()) {
+                    // Ta värdena och sätt dem i vår dataList
+                    dataList.add(new DataModel(value1, value2));
+                    // berättar till vår adapter att det har kommit en update
+                    // Det finns även mer specifika metoder (item update, item add... )
+                    adapter.notifyDataSetChanged();
+                    inputField1.setText("");
+                    inputField2.setText("");
+
+                    //CalcMean
+                    double meanValue = calculateMean();
+                    //LogCat!
+                    Log.d("MeanValue", "Mean value of integers: " + meanValue);
+                }
             }
         });
     }
 
-
-    public class Statistics {
-
-        public double calcMean(ArrayList<Double> dataset) {
-            double sum = 0;
-            for (double num : dataset) {
-                sum += num;
+    private double calculateMean() {
+        int sum = 0;
+        int count = 0;
+        for (DataModel data : dataList) {
+            // Try & Catch
+            try {
+                int value = Integer.parseInt(data.getValue2());
+                sum += value;
+                count++;
+            } catch (NumberFormatException e) {
+                // Handle the case where the value is not an integer
             }
-            return sum / dataset.size();
         }
+        return count > 0 ? (double) sum / count : 0;
     }
 }
