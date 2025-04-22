@@ -1,78 +1,76 @@
 package fi.arcada.codechallenge;
 
+import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.ArrayList;
-import java.util.List;
+import android.content.SharedPreferences;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class MainActivity extends AppCompatActivity {
+    private boolean isInitialLaunch = true;
+    private TextView appCountTextView;
+    private TextView welcomeTextView;
+    private TextView savedTextView; // Add a TextView to display the saved text
+    private FloatingActionButton settingsButton;
 
-    //Vi vill ha vår datamodel och en RecyclerView adapter
-    private List<DataModel> dataList = new ArrayList<>();
-    private MyAdapter adapter;
+    private SharedPreferences sharedPreferences;
 
+    private static final String PREFS_NAME = "AppCounterPrefs";
+    private static final String APP_COUNTER_KEY = "appCounter";
+    private static final String SAVED_TEXT_KEY = "savedText"; // Key for the saved text
+
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Hitta våra saker!
-        EditText inputField1 = findViewById(R.id.inputField1);
-        EditText inputField2 = findViewById(R.id.inputField2);
-        Button addButton = findViewById(R.id.addButton);
-        RecyclerView recyclerView = findViewById(R.id.recyclerView);
+        appCountTextView = findViewById(R.id.appCount);
+        welcomeTextView = findViewById(R.id.welcomeView);
+        savedTextView = findViewById(R.id.savedTextView); // Initialize the new TextView
 
+        settingsButton = findViewById(R.id.myFloatingActionButton);
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new MyAdapter(dataList);
-        recyclerView.setAdapter(adapter);
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
-        // Vi trycker på knappen!
-        addButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String value1 = inputField1.getText().toString();
-                String value2 = inputField2.getText().toString();
-                // Error handlers!
-                if (!value1.isEmpty() && !value2.isEmpty()) {
-                    // Ta värdena och sätt dem i vår dataList
-                    dataList.add(new DataModel(value1, value2));
-                    // berättar till vår adapter att det har kommit en update
-                    // Det finns även mer specifika metoder (item update, item add... )
-                    adapter.notifyDataSetChanged();
-                    inputField1.setText("");
-                    inputField2.setText("");
+        welcomeTextView.setText("Hello!");
 
-                    //CalcMean
-                    double meanValue = calculateMean();
-                    //LogCat!
-                    Log.d("MeanValue", "Mean value of integers: " + meanValue);
-                }
-            }
-        });
+        // Retrieve and increment the app counter
+        int appCounter = sharedPreferences.getInt(APP_COUNTER_KEY, 0);
+        appCounter++;
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(APP_COUNTER_KEY, appCounter);
+        editor.apply();
+        appCountTextView.setText(String.valueOf(appCounter));
+
+        // Retrieve and display saved text from SharedPreferences
+        String savedText = sharedPreferences.getString(SAVED_TEXT_KEY, "No saved text");
+        savedTextView.setText(savedText);
+
+        settingsButton.setOnClickListener(v -> openSettings());
     }
 
-    private double calculateMean() {
-        int sum = 0;
-        int count = 0;
-        for (DataModel data : dataList) {
-            // Try & Catch
-            try {
-                int value = Integer.parseInt(data.getValue2());
-                sum += value;
-                count++;
-            } catch (NumberFormatException e) {
-                // Handle the case where the value is not an integer
-            }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!isInitialLaunch) {
+            welcomeTextView.setText("Hello again");
+        } else {
+            isInitialLaunch = false;
         }
-        return count > 0 ? (double) sum / count : 0;
+
+        // Retrieve and display the saved text again in case it was updated
+        String savedText = sharedPreferences.getString(SAVED_TEXT_KEY, "No saved text");
+        savedTextView.setText(savedText);
+    }
+
+    private void openSettings() {
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivity(intent);
     }
 }
