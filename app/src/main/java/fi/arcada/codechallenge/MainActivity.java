@@ -1,76 +1,54 @@
 package fi.arcada.codechallenge;
 
-import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TextView;
+import android.util.Log;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.SharedPreferences;
-
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.util.Arrays;
+
 public class MainActivity extends AppCompatActivity {
-    private boolean isInitialLaunch = true;
-    private TextView appCountTextView;
-    private TextView welcomeTextView;
-    private TextView savedTextView; // Add a TextView to display the saved text
-    private FloatingActionButton settingsButton;
 
-    private SharedPreferences sharedPreferences;
-
-    private static final String PREFS_NAME = "AppCounterPrefs";
-    private static final String APP_COUNTER_KEY = "appCounter";
-    private static final String SAVED_TEXT_KEY = "savedText"; // Key for the saved text
-
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        appCountTextView = findViewById(R.id.appCount);
-        welcomeTextView = findViewById(R.id.welcomeView);
-        savedTextView = findViewById(R.id.savedTextView); // Initialize the new TextView
+        double[] temperatures = {17.5, 16.0, 16.5, 15.0, 17.5, 18.0, 15.5, 20.0, 19.5, 16.0};
 
-        settingsButton = findViewById(R.id.myFloatingActionButton);
+        // Calculate SMA with window size 3
+        double[] smaResults = movingAvg(temperatures, 3);
 
-        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        // Get reference to TextView
+        TextView resultView = findViewById(R.id.resultTextView);
 
-        welcomeTextView.setText("Hello!");
+        // Display results in TextView
+        resultView.setText("From " + Arrays.toString(temperatures) + " SMA Results: " + Arrays.toString(smaResults));
 
-        // Retrieve and increment the app counter
-        int appCounter = sharedPreferences.getInt(APP_COUNTER_KEY, 0);
-        appCounter++;
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt(APP_COUNTER_KEY, appCounter);
-        editor.apply();
-        appCountTextView.setText(String.valueOf(appCounter));
 
-        // Retrieve and display saved text from SharedPreferences
-        String savedText = sharedPreferences.getString(SAVED_TEXT_KEY, "No saved text");
-        savedTextView.setText(savedText);
-
-        settingsButton.setOnClickListener(v -> openSettings());
+        // Show Toast
+        Toast.makeText(this, "SMA Calculated!", Toast.LENGTH_SHORT).show();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (!isInitialLaunch) {
-            welcomeTextView.setText("Hello again");
-        } else {
-            isInitialLaunch = false;
+    public double[] movingAvg(double[] values, int window) {
+        if (values == null || window <= 0 || values.length < window) {
+            return new double[0];
         }
 
-        // Retrieve and display the saved text again in case it was updated
-        String savedText = sharedPreferences.getString(SAVED_TEXT_KEY, "No saved text");
-        savedTextView.setText(savedText);
-    }
+        int smaLength = values.length - window + 1;
+        double[] sma = new double[smaLength];
 
-    private void openSettings() {
-        Intent intent = new Intent(this, SettingsActivity.class);
-        startActivity(intent);
+        for (int i = 0; i < smaLength; i++) {
+            double sum = 0;
+            for (int k = 0; k < window; k++) {
+                sum += values[i + k];
+            }
+            sma[i] = sum / window;
+        }
+        return sma;
     }
 }
